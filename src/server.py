@@ -12,10 +12,17 @@ from mcp.types import (
     CallToolRequest,
     CallToolResult,
     EmbeddedResource,
+    GetPromptRequest,
+    GetPromptResult,
+    ListPromptsRequest,
+    ListPromptsResult,
     ListResourcesRequest,
     ListResourcesResult,
     ListToolsRequest,
     ListToolsResult,
+    Prompt,
+    PromptArgument,
+    PromptMessage,
     ReadResourceRequest,
     ReadResourceResult,
     Resource,
@@ -49,6 +56,9 @@ from utils.errors import CronlyticError
 
 # Import resource providers
 from resources import JobResourceProvider, CronTemplatesProvider
+
+# Import prompts
+from prompts import get_all_prompts
 
 
 # Configure logging
@@ -318,6 +328,90 @@ class CronlyticMCPServer:
                     "message": str(e)
                 }
                 return json.dumps(error_response, indent=2)
+
+        @self.server.list_prompts()
+        async def handle_list_prompts() -> List[Prompt]:
+            """Handle list prompts request."""
+            logger.debug("Handling list_prompts request")
+
+            try:
+                all_prompts = get_all_prompts()
+                prompt_list = []
+
+                for prompt_config in all_prompts:
+                    arguments = []
+                    for arg in prompt_config.get("arguments", []):
+                        arguments.append(PromptArgument(
+                            name=arg["name"],
+                            description=arg["description"],
+                            required=arg.get("required", False)
+                        ))
+
+                    prompt_list.append(Prompt(
+                        name=prompt_config["name"],
+                        description=prompt_config["description"],
+                        arguments=arguments
+                    ))
+
+                logger.debug(f"Returning {len(prompt_list)} prompts")
+                return prompt_list
+
+            except Exception as e:
+                logger.error(f"Error listing prompts: {e}")
+                return []
+
+        @self.server.get_prompt()
+        async def handle_get_prompt(
+            name: str, arguments: Optional[Dict[str, str]] = None
+        ) -> GetPromptResult:
+            """Handle get prompt request."""
+            logger.debug(f"Handling get_prompt request for: {name}")
+
+            try:
+                all_prompts = get_all_prompts()
+
+                # Find the requested prompt
+                prompt_config = None
+                for config in all_prompts:
+                    if config["name"] == name:
+                        prompt_config = config
+                        break
+
+                if not prompt_config:
+                    raise ValueError(f"Prompt '{name}' not found")
+
+                # Format the template with provided arguments
+                template = prompt_config["template"]
+                if arguments:
+                    # Replace argument placeholders in the template
+                    for arg_name, arg_value in arguments.items():
+                        placeholder = "{" + arg_name + "}"
+                        template = template.replace(placeholder, arg_value)
+
+                # Create the prompt message
+                message = PromptMessage(
+                    role="user",
+                    content=TextContent(type="text", text=template)
+                )
+
+                return GetPromptResult(
+                    description=prompt_config["description"],
+                    messages=[message]
+                )
+
+            except Exception as e:
+                logger.error(f"Error getting prompt '{name}': {e}")
+                error_message = PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=f"Error loading prompt '{name}': {str(e)}"
+                    )
+                )
+                return GetPromptResult(
+                    description=f"Error loading prompt: {name}",
+                    messages=[error_message]
+                )
 
     def _format_health_check_result(self, result: Dict[str, Any]) -> str:
         """Format health check result for display."""
