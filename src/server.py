@@ -12,8 +12,12 @@ from mcp.types import (
     CallToolRequest,
     CallToolResult,
     EmbeddedResource,
+    ListResourcesRequest,
+    ListResourcesResult,
     ListToolsRequest,
     ListToolsResult,
+    ReadResourceRequest,
+    ReadResourceResult,
     Resource,
     Tool,
     TextContent,
@@ -42,6 +46,9 @@ from tools.job_control import (
 )
 from utils.auth import AuthConfig, get_auth_config
 from utils.errors import CronlyticError
+
+# Import resource providers
+from resources import JobResourceProvider, CronTemplatesProvider
 
 
 # Configure logging
@@ -75,6 +82,10 @@ class CronlyticMCPServer:
         self.config = config
         self.server = Server("cronlytic-mcp-server")
         self.client: Optional[CronlyticAPIClient] = None
+
+        # Initialize resource providers
+        self.job_resource_provider: Optional[JobResourceProvider] = None
+        self.cron_templates_provider = CronTemplatesProvider()
 
         # Setup server handlers
         self._setup_handlers()
@@ -225,6 +236,88 @@ class CronlyticMCPServer:
                     type="text",
                     text=f"Error: {error_msg}"
                 )]
+
+        @self.server.list_resources()
+        async def handle_list_resources() -> List[Resource]:
+            """Handle list resources request."""
+            logger.debug("Handling list_resources request")
+
+            try:
+                # Ensure we have configuration for job resources
+                if self.config is None:
+                    self.config = get_auth_config()
+
+                # Initialize job resource provider if needed
+                if self.job_resource_provider is None:
+                    self.job_resource_provider = JobResourceProvider(self.config)
+
+                # Get job resources
+                job_resources = await self.job_resource_provider.get_resource_list()
+
+                # Convert to MCP Resource objects
+                resources = []
+                for resource_data in job_resources:
+                    resources.append(Resource(
+                        uri=resource_data["uri"],
+                        name=resource_data["name"],
+                        description=resource_data.get("description", ""),
+                        mimeType=resource_data.get("mimeType", "application/json")
+                    ))
+
+                # Add cron templates resource
+                resources.append(Resource(
+                    uri=self.cron_templates_provider.base_uri,
+                    name="Cron Expression Templates",
+                    description="Comprehensive collection of cron expression templates and patterns",
+                    mimeType="application/json"
+                ))
+
+                logger.debug(f"Returning {len(resources)} resources")
+                return resources
+
+            except Exception as e:
+                logger.error(f"Error listing resources: {e}")
+                # Return at least the cron templates on error
+                return [Resource(
+                    uri=self.cron_templates_provider.base_uri,
+                    name="Cron Expression Templates",
+                    description="Comprehensive collection of cron expression templates and patterns",
+                    mimeType="application/json"
+                )]
+
+        @self.server.read_resource()
+        async def handle_read_resource(uri: str) -> str:
+            """Handle read resource request."""
+            logger.debug(f"Handling read_resource request for URI: {uri}")
+
+            try:
+                if uri == self.cron_templates_provider.base_uri:
+                    # Return cron templates
+                    resource_data = self.cron_templates_provider.get_templates_resource()
+                    return resource_data["text"]
+
+                elif uri.startswith("cronlytic://"):
+                    # Handle job resources
+                    if self.config is None:
+                        self.config = get_auth_config()
+
+                    if self.job_resource_provider is None:
+                        self.job_resource_provider = JobResourceProvider(self.config)
+
+                    resource_data = await self.job_resource_provider.get_resource_content(uri)
+                    return resource_data["text"]
+
+                else:
+                    raise ValueError(f"Unknown resource URI: {uri}")
+
+            except Exception as e:
+                logger.error(f"Error reading resource {uri}: {e}")
+                error_response = {
+                    "error": "Failed to read resource",
+                    "uri": uri,
+                    "message": str(e)
+                }
+                return json.dumps(error_response, indent=2)
 
     def _format_health_check_result(self, result: Dict[str, Any]) -> str:
         """Format health check result for display."""

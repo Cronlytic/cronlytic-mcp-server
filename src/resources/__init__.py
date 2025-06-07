@@ -1,6 +1,9 @@
-"""Resources package for the Cronlytic MCP Server."""
+"""Resources for the Cronlytic MCP Server."""
 
-# Resources will be implemented in Phase 4
-# This file is a placeholder for the package structure
+from .job_resources import JobResourceProvider
+from .templates import CronTemplatesProvider
 
-__all__ = []
+__all__ = [
+    "JobResourceProvider",
+    "CronTemplatesProvider",
+]
