@@ -389,8 +389,8 @@ def validate_job_id(job_id: str) -> str:
     if not job_id:
         raise ValidationError("job_id", "Job ID cannot be empty", job_id)
 
-    # Basic UUID-like format validation (flexible)
-    if len(job_id) < 8:
+    # Basic ID format validation (flexible)
+    if len(job_id) < 3:
         raise ValidationError("job_id", "Job ID appears to be too short", job_id)
 
     return job_id

@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Dict, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from .errors import AuthenticationError
 
 
@@ -25,35 +25,40 @@ class AuthConfig(BaseModel):
     max_retries: int = Field(default=3, description="Maximum number of retries")
     retry_delay: float = Field(default=1.0, description="Base retry delay in seconds")
 
-    @validator("api_key")
+    @field_validator("api_key")
+    @classmethod
     def validate_api_key(cls, v: str) -> str:
         """Validate API key format."""
         if not v or len(v.strip()) == 0:
             raise ValueError("API key cannot be empty")
         return v.strip()
 
-    @validator("user_id")
+    @field_validator("user_id")
+    @classmethod
     def validate_user_id(cls, v: str) -> str:
         """Validate user ID format."""
         if not v or len(v.strip()) == 0:
             raise ValueError("User ID cannot be empty")
         return v.strip()
 
-    @validator("base_url")
+    @field_validator("base_url")
+    @classmethod
     def validate_base_url(cls, v: str) -> str:
         """Validate base URL format."""
         if not v.startswith(("http://", "https://")):
             raise ValueError("Base URL must start with http:// or https://")
         return v.rstrip("/")
 
-    @validator("timeout")
+    @field_validator("timeout")
+    @classmethod
     def validate_timeout(cls, v: int) -> int:
         """Validate timeout value."""
         if v <= 0:
             raise ValueError("Timeout must be positive")
         return v
 
-    @validator("max_retries")
+    @field_validator("max_retries")
+    @classmethod
     def validate_max_retries(cls, v: int) -> int:
         """Validate max retries value."""
         if v < 0:

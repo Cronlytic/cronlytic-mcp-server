@@ -20,6 +20,26 @@ from mcp.types import (
 )
 from cronlytic_client import CronlyticAPIClient
 from tools.health_check import health_check_tool, HEALTH_CHECK_TOOL_DEFINITION
+from tools.job_management import (
+    create_job_tool,
+    list_jobs_tool,
+    get_job_tool,
+    update_job_tool,
+    delete_job_tool,
+    CREATE_JOB_TOOL_DEFINITION,
+    LIST_JOBS_TOOL_DEFINITION,
+    GET_JOB_TOOL_DEFINITION,
+    UPDATE_JOB_TOOL_DEFINITION,
+    DELETE_JOB_TOOL_DEFINITION,
+)
+from tools.job_control import (
+    pause_job_tool,
+    resume_job_tool,
+    get_job_logs_tool,
+    PAUSE_JOB_TOOL_DEFINITION,
+    RESUME_JOB_TOOL_DEFINITION,
+    GET_JOB_LOGS_TOOL_DEFINITION,
+)
 from utils.auth import AuthConfig, get_auth_config
 from utils.errors import CronlyticError
 
@@ -70,11 +90,54 @@ class CronlyticMCPServer:
             logger.debug("Handling list_tools request")
 
             tools = [
+                # Health check tool
                 Tool(
                     name=HEALTH_CHECK_TOOL_DEFINITION["name"],
                     description=HEALTH_CHECK_TOOL_DEFINITION["description"],
                     inputSchema=HEALTH_CHECK_TOOL_DEFINITION["inputSchema"],
-                )
+                ),
+                # Job management CRUD tools
+                Tool(
+                    name=CREATE_JOB_TOOL_DEFINITION["name"],
+                    description=CREATE_JOB_TOOL_DEFINITION["description"],
+                    inputSchema=CREATE_JOB_TOOL_DEFINITION["inputSchema"],
+                ),
+                Tool(
+                    name=LIST_JOBS_TOOL_DEFINITION["name"],
+                    description=LIST_JOBS_TOOL_DEFINITION["description"],
+                    inputSchema=LIST_JOBS_TOOL_DEFINITION["inputSchema"],
+                ),
+                Tool(
+                    name=GET_JOB_TOOL_DEFINITION["name"],
+                    description=GET_JOB_TOOL_DEFINITION["description"],
+                    inputSchema=GET_JOB_TOOL_DEFINITION["inputSchema"],
+                ),
+                Tool(
+                    name=UPDATE_JOB_TOOL_DEFINITION["name"],
+                    description=UPDATE_JOB_TOOL_DEFINITION["description"],
+                    inputSchema=UPDATE_JOB_TOOL_DEFINITION["inputSchema"],
+                ),
+                Tool(
+                    name=DELETE_JOB_TOOL_DEFINITION["name"],
+                    description=DELETE_JOB_TOOL_DEFINITION["description"],
+                    inputSchema=DELETE_JOB_TOOL_DEFINITION["inputSchema"],
+                ),
+                # Job control tools
+                Tool(
+                    name=PAUSE_JOB_TOOL_DEFINITION["name"],
+                    description=PAUSE_JOB_TOOL_DEFINITION["description"],
+                    inputSchema=PAUSE_JOB_TOOL_DEFINITION["inputSchema"],
+                ),
+                Tool(
+                    name=RESUME_JOB_TOOL_DEFINITION["name"],
+                    description=RESUME_JOB_TOOL_DEFINITION["description"],
+                    inputSchema=RESUME_JOB_TOOL_DEFINITION["inputSchema"],
+                ),
+                Tool(
+                    name=GET_JOB_LOGS_TOOL_DEFINITION["name"],
+                    description=GET_JOB_LOGS_TOOL_DEFINITION["description"],
+                    inputSchema=GET_JOB_LOGS_TOOL_DEFINITION["inputSchema"],
+                ),
             ]
 
             logger.debug(f"Returning {len(tools)} tools")
@@ -96,14 +159,48 @@ class CronlyticMCPServer:
                 # Handle different tools
                 if name == "health_check":
                     result = await health_check_tool(self.config)
-
-                    # Format result as readable text
                     output = self._format_health_check_result(result)
+                    return [TextContent(type="text", text=output)]
 
-                    return [TextContent(
-                        type="text",
-                        text=output
-                    )]
+                elif name == "create_job":
+                    result = await create_job_tool(self.config, arguments)
+                    output = self._format_job_result(result, "Job Creation")
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "list_jobs":
+                    result = await list_jobs_tool(self.config, arguments)
+                    output = self._format_job_list_result(result)
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "get_job":
+                    result = await get_job_tool(self.config, arguments)
+                    output = self._format_job_result(result, "Job Details")
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "update_job":
+                    result = await update_job_tool(self.config, arguments)
+                    output = self._format_job_result(result, "Job Update")
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "delete_job":
+                    result = await delete_job_tool(self.config, arguments)
+                    output = self._format_job_deletion_result(result)
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "pause_job":
+                    result = await pause_job_tool(self.config, arguments)
+                    output = self._format_job_result(result, "Job Pause")
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "resume_job":
+                    result = await resume_job_tool(self.config, arguments)
+                    output = self._format_job_result(result, "Job Resume")
+                    return [TextContent(type="text", text=output)]
+
+                elif name == "get_job_logs":
+                    result = await get_job_logs_tool(self.config, arguments)
+                    output = self._format_job_logs_result(result)
+                    return [TextContent(type="text", text=output)]
 
                 else:
                     error_msg = f"Unknown tool: {name}"
@@ -193,6 +290,369 @@ class CronlyticMCPServer:
                 json.dumps(result, indent=2),
                 "```",
             ])
+
+        return "\n".join(lines)
+
+    def _format_job_result(self, result: Dict[str, Any], operation: str) -> str:
+        """Format job operation result for display."""
+        lines = [f"# {operation} Result", ""]
+
+        if result.get("success"):
+            lines.append(f"✅ **Success:** {result.get('message', 'Operation completed')}")
+            lines.append("")
+
+            job = result.get("job")
+            if job:
+                lines.extend([
+                    "## Job Details",
+                    f"- **ID:** {job.get('id', 'N/A')}",
+                    f"- **Name:** {job.get('name', 'N/A')}",
+                    f"- **URL:** {job.get('url', 'N/A')}",
+                    f"- **Method:** {job.get('method', 'N/A')}",
+                    f"- **Cron Expression:** `{job.get('cron_expression', 'N/A')}`",
+                    f"- **Status:** {job.get('status', 'N/A')}",
+                    "",
+                ])
+
+                # Add next run time if available
+                next_run = job.get("next_run_at") or result.get("next_run")
+                if next_run:
+                    lines.extend([
+                        "## Schedule",
+                        f"- **Next Run:** {next_run}",
+                        "",
+                    ])
+
+                # Add headers if present
+                headers = job.get("headers")
+                if headers:
+                    lines.extend([
+                        "## Headers",
+                    ])
+                    for key, value in headers.items():
+                        lines.append(f"- **{key}:** {value}")
+                    lines.append("")
+
+                # Add body if present
+                body = job.get("body")
+                if body:
+                    lines.extend([
+                        "## Request Body",
+                        f"```",
+                        body,
+                        "```",
+                        "",
+                    ])
+
+        else:
+            lines.append(f"❌ **Error:** {result.get('message', 'Operation failed')}")
+            lines.append("")
+
+            # Add field-specific error if available
+            field = result.get("field")
+            value = result.get("value")
+            if field and value is not None:
+                lines.extend([
+                    "## Validation Error",
+                    f"- **Field:** {field}",
+                    f"- **Value:** {value}",
+                    "",
+                ])
+
+            # Add details if available
+            details = result.get("details")
+            if details:
+                lines.extend([
+                    "## Error Details",
+                    "```json",
+                    json.dumps(details, indent=2),
+                    "```",
+                    "",
+                ])
+
+        return "\n".join(lines)
+
+    def _format_job_list_result(self, result: Dict[str, Any]) -> str:
+        """Format job list result for display."""
+        lines = ["# Job List", ""]
+
+        if result.get("success"):
+            summary = result.get("summary", {})
+            total_count = summary.get("total_count", 0)
+
+            lines.append(f"✅ **Found {total_count} job{'s' if total_count != 1 else ''}**")
+            lines.append("")
+
+            # Add summary statistics
+            status_breakdown = summary.get("status_breakdown", {})
+            if status_breakdown:
+                lines.extend([
+                    "## Status Summary",
+                ])
+                for status, count in status_breakdown.items():
+                    emoji = "🟢" if status == "pending" else "⏸️" if status == "paused" else "🔵"
+                    lines.append(f"- {emoji} **{status.title()}:** {count}")
+                lines.append("")
+
+            # Show if results were limited
+            if summary.get("limited"):
+                limit = summary.get("limit_applied")
+                lines.extend([
+                    f"⚠️ *Results limited to {limit} jobs*",
+                    "",
+                ])
+
+            # List jobs
+            jobs = result.get("jobs", [])
+            if jobs:
+                lines.extend([
+                    "## Jobs",
+                    "",
+                ])
+
+                for i, job in enumerate(jobs):
+                    status = job.get("status", "unknown")
+                    emoji = "🟢" if status == "pending" else "⏸️" if status == "paused" else "🔵"
+
+                    lines.extend([
+                        f"### {i+1}. {job.get('name', 'Unnamed Job')} {emoji}",
+                        f"- **ID:** {job.get('id', 'N/A')}",
+                        f"- **URL:** {job.get('url', 'N/A')}",
+                        f"- **Method:** {job.get('method', 'N/A')}",
+                        f"- **Cron:** `{job.get('cron_expression', 'N/A')}`",
+                        f"- **Status:** {status}",
+                    ])
+
+                    next_run = job.get("next_run_at")
+                    if next_run:
+                        lines.append(f"- **Next Run:** {next_run}")
+
+                    lines.append("")
+
+            else:
+                lines.extend([
+                    "## No Jobs Found",
+                    "",
+                    "You haven't created any cron jobs yet. Use the `create_job` tool to get started!",
+                    "",
+                ])
+
+        else:
+            lines.append(f"❌ **Error:** {result.get('message', 'Failed to list jobs')}")
+            lines.append("")
+
+            # Add error details if available
+            details = result.get("details")
+            if details:
+                lines.extend([
+                    "## Error Details",
+                    "```json",
+                    json.dumps(details, indent=2),
+                    "```",
+                    "",
+                ])
+
+        return "\n".join(lines)
+
+    def _format_job_deletion_result(self, result: Dict[str, Any]) -> str:
+        """Format job deletion result for display."""
+        lines = ["# Job Deletion Result", ""]
+
+        if result.get("success"):
+            lines.append(f"✅ **Success:** {result.get('message', 'Job deleted successfully')}")
+            lines.append("")
+
+            job_id = result.get("job_id")
+            if job_id:
+                lines.extend([
+                    "## Deletion Details",
+                    f"- **Job ID:** {job_id}",
+                    f"- **Deleted:** {'Yes' if result.get('deleted') else 'No'}",
+                ])
+
+                deletion_time = result.get("deletion_timestamp")
+                if deletion_time:
+                    lines.append(f"- **Deletion Time:** {deletion_time}")
+
+                lines.append("")
+
+            lines.extend([
+                "⚠️ **Important:** This action cannot be undone. The job and all its execution history have been permanently removed.",
+                "",
+            ])
+
+        else:
+            lines.append(f"❌ **Error:** {result.get('message', 'Failed to delete job')}")
+            lines.append("")
+
+            # Handle confirmation required case
+            if result.get("error") == "Confirmation Required":
+                lines.extend([
+                    "## ⚠️ Confirmation Required",
+                    "",
+                    result.get("warning", "This action requires confirmation."),
+                    "",
+                    "**To proceed with deletion:**",
+                    "- Set the `confirm` parameter to `true`",
+                    "- **Warning:** This action cannot be undone!",
+                    "",
+                ])
+
+            # Add field-specific error if available
+            field = result.get("field")
+            value = result.get("value")
+            if field and value is not None:
+                lines.extend([
+                    "## Validation Error",
+                    f"- **Field:** {field}",
+                    f"- **Value:** {value}",
+                    "",
+                ])
+
+            # Add details if available
+            details = result.get("details")
+            if details:
+                lines.extend([
+                    "## Error Details",
+                    "```json",
+                    json.dumps(details, indent=2),
+                    "```",
+                    "",
+                ])
+
+        return "\n".join(lines)
+
+    def _format_job_logs_result(self, result: Dict[str, Any]) -> str:
+        """Format job logs result for display."""
+        lines = ["# Job Execution Logs", ""]
+
+        if result.get("success"):
+            summary = result.get("summary", {})
+            total_logs = summary.get("total_logs_returned", 0)
+
+            lines.append(f"✅ **{result.get('message', 'Logs retrieved successfully')}**")
+            lines.append("")
+
+            # Add summary statistics
+            status_breakdown = summary.get("status_breakdown", {})
+            if status_breakdown:
+                lines.extend([
+                    "## Execution Summary",
+                ])
+                for status, count in status_breakdown.items():
+                    emoji = "✅" if status == "success" else "❌" if status == "failed" else "🔄" if status == "running" else "🔵"
+                    lines.append(f"- {emoji} **{status.title()}:** {count}")
+                lines.append("")
+
+            # Show if results were limited
+            if summary.get("limited"):
+                limit = summary.get("limit_applied")
+                lines.extend([
+                    f"⚠️ *Results limited to {limit} log entries*",
+                    "",
+                ])
+
+            # Display job information
+            job_info = result.get("job", {})
+            if job_info:
+                lines.extend([
+                    "## Job Information",
+                    f"- **Name:** {job_info.get('name', 'N/A')}",
+                    f"- **ID:** {job_info.get('id', 'N/A')}",
+                    f"- **Status:** {job_info.get('status', 'N/A')}",
+                    "",
+                ])
+
+            # List log entries
+            logs = result.get("logs", [])
+            if logs:
+                lines.extend([
+                    "## Recent Executions",
+                    "",
+                ])
+
+                for i, log in enumerate(logs):
+                    status = log.get("status", "unknown")
+                    emoji = "✅" if status == "success" else "❌" if status == "failed" else "🔄" if status == "running" else "🔵"
+
+                    lines.extend([
+                        f"### {i+1}. Execution {emoji}",
+                        f"- **Status:** {status}",
+                    ])
+
+                    # Add timestamp
+                    timestamp = log.get("executed_at") or log.get("timestamp")
+                    if timestamp:
+                        lines.append(f"- **Executed At:** {timestamp}")
+
+                    # Add duration if available
+                    duration = log.get("duration_ms")
+                    if duration is not None:
+                        lines.append(f"- **Duration:** {duration}ms")
+
+                    # Add response code if available
+                    response_code = log.get("response_code")
+                    if response_code is not None:
+                        lines.append(f"- **Response Code:** {response_code}")
+
+                    # Add response size if available
+                    response_size = log.get("response_size")
+                    if response_size is not None:
+                        lines.append(f"- **Response Size:** {response_size} bytes")
+
+                    # Add error message if failed
+                    error_message = log.get("error") or log.get("error_message")
+                    if error_message:
+                        lines.extend([
+                            f"- **Error:** {error_message}",
+                        ])
+
+                    # Add response body preview if available (truncated)
+                    response_body = log.get("response_body")
+                    if response_body and len(response_body) > 0:
+                        preview = response_body[:200] + "..." if len(response_body) > 200 else response_body
+                        lines.extend([
+                            f"- **Response Preview:**",
+                            f"  ```",
+                            f"  {preview}",
+                            f"  ```",
+                        ])
+
+                    lines.append("")
+
+            else:
+                lines.extend([
+                    "## No Execution Logs Found",
+                    "",
+                    "This job hasn't been executed yet, or all log entries have expired.",
+                    "",
+                ])
+
+        else:
+            lines.append(f"❌ **Error:** {result.get('message', 'Failed to retrieve logs')}")
+            lines.append("")
+
+            # Add field-specific error if available
+            field = result.get("field")
+            value = result.get("value")
+            if field and value is not None:
+                lines.extend([
+                    "## Validation Error",
+                    f"- **Field:** {field}",
+                    f"- **Value:** {value}",
+                    "",
+                ])
+
+            # Add error details if available
+            details = result.get("details")
+            if details:
+                lines.extend([
+                    "## Error Details",
+                    "```json",
+                    json.dumps(details, indent=2),
+                    "```",
+                    "",
+                ])
 
         return "\n".join(lines)
 

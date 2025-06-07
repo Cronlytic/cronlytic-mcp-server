@@ -86,7 +86,9 @@ strict_equality = true
 minversion = "7.0"
 addopts = "-ra -q --strict-markers --strict-config"
 testpaths = ["tests"]
-asyncio_mode = "auto"
+markers = [
+    "asyncio: marks tests as asyncio",
+]
 
 [tool.coverage.run]
 source = ["src"]
