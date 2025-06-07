@@ -1,0 +1,8 @@
+{
+  "api_key": "your_cronlytic_api_key_here",
+  "user_id": "your_cronlytic_user_id_here",
+  "base_url": "https://api.cronlytic.com/prog",
+  "timeout": 30,
+  "max_retries": 3,
+  "retry_delay": 1.0
+}
