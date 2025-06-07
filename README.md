@@ -200,6 +200,25 @@ To use with Claude Desktop, add this to your `claude_desktop_config.json`:
 }
 ```
 
+To run virtual environment of python
+```json
+{
+  "mcpServers": {
+          "cronlytic": {
+        "command": "python",
+        "args": ["-m", "src.server"],
+        "cwd": "PATH/cronlytic-mcp-server",
+        "env": {
+          "VIRTUAL_ENV": "PATH/cronlytic-mcp-server/.venv",
+          "PATH": "PATH/cronlytic-mcp-server/.venv/bin:${PATH}",
+          "CRONLYTIC_API_KEY": "your_api_key_here",
+          "CRONLYTIC_USER_ID": "your_user_id_here"
+        }
+      }
+  }
+}
+```
+
 ## Development
 
 ### Project Structure
