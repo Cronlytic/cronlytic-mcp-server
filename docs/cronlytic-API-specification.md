@@ -887,7 +887,7 @@ fi
 
 - **Documentation Issues**: Check this README for the latest information
 - **API Errors**: Check the error response for specific details
-- **Support**: Contact support@cronlytic.com
+- **Support**: Contact saleh@cronlytic.com
 - **Status Page**: Check https://status.cronlytic.com for service status
 
 ---
@@ -909,7 +909,7 @@ fi
 ## Support
 
 For API support and questions:
-- **Email**: support@cronlytic.com
+- **Email**: saleh@cronlytic.com
 - **Documentation**: This README
 - **Status Page**: https://status.cronlytic.com
 - **Test Report**: See `TEST_REPORT.md` for detailed testing information

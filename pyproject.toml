@@ -7,7 +7,7 @@ name = "cronlytic-mcp-server"
 version = "0.1.0"
 description = "MCP server for Cronlytic API integration"
 authors = [
-    {name = "Cronlytic Team", email = "support@cronlytic.com"}
+    {name = "Cronlytic Team", email = "saleh@cronlytic.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}

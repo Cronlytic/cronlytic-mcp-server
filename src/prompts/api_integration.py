@@ -57,7 +57,7 @@ I'll guide you through setting up the Cronlytic MCP server from start to finish.
 ### Install the MCP Server
 ```bash
 # Install from source
-git clone https://github.com/cronlytic/cronlytic-mcp-server
+git clone https://github.com/Cronlytic/cronlytic-mcp-server
 cd cronlytic-mcp-server
 pip install -e .
 

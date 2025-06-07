@@ -53,6 +53,7 @@ from tools.job_control import (
 )
 from utils.auth import AuthConfig, get_auth_config
 from utils.errors import CronlyticError
+from utils.performance import performance_tracked, get_performance_report
 
 # Import resource providers
 from resources import JobResourceProvider, CronTemplatesProvider
@@ -165,6 +166,7 @@ class CronlyticMCPServer:
             return tools
 
         @self.server.call_tool()
+        @performance_tracked("tool_call")
         async def handle_call_tool(
             name: str, arguments: Dict[str, Any]
         ) -> List[TextContent]:
