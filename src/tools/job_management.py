@@ -40,14 +40,15 @@ CREATE_JOB_TOOL_DEFINITION = {
             },
             "headers": {
                 "type": "object",
-                "description": "HTTP headers to include with the request (optional)",
+                "description": "HTTP headers to include with the request (can be empty {})",
                 "additionalProperties": {
                     "type": "string"
                 },
+                "default": {},
             },
             "body": {
                 "type": "string",
-                "description": "Request body content (optional, for POST/PUT requests)",
+                "description": "Request body content (can be empty string)",
                 "default": "",
             },
             "cron_expression": {
@@ -56,7 +57,7 @@ CREATE_JOB_TOOL_DEFINITION = {
                 "description": "5-field cron expression (minute hour day month day-of-week)",
             },
         },
-        "required": ["name", "url", "cron_expression"],
+        "required": ["name", "url", "method", "headers", "body", "cron_expression"],
     },
 }
 

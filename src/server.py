@@ -109,61 +109,67 @@ class CronlyticMCPServer:
         @self.server.list_tools()
         async def handle_list_tools() -> List[Tool]:
             """Handle list tools request."""
-            logger.debug("Handling list_tools request")
+            logger.info("🔧 Handling list_tools request")
 
-            tools = [
-                # Health check tool
-                Tool(
-                    name=HEALTH_CHECK_TOOL_DEFINITION["name"],
-                    description=HEALTH_CHECK_TOOL_DEFINITION["description"],
-                    inputSchema=HEALTH_CHECK_TOOL_DEFINITION["inputSchema"],
-                ),
-                # Job management CRUD tools
-                Tool(
-                    name=CREATE_JOB_TOOL_DEFINITION["name"],
-                    description=CREATE_JOB_TOOL_DEFINITION["description"],
-                    inputSchema=CREATE_JOB_TOOL_DEFINITION["inputSchema"],
-                ),
-                Tool(
-                    name=LIST_JOBS_TOOL_DEFINITION["name"],
-                    description=LIST_JOBS_TOOL_DEFINITION["description"],
-                    inputSchema=LIST_JOBS_TOOL_DEFINITION["inputSchema"],
-                ),
-                Tool(
-                    name=GET_JOB_TOOL_DEFINITION["name"],
-                    description=GET_JOB_TOOL_DEFINITION["description"],
-                    inputSchema=GET_JOB_TOOL_DEFINITION["inputSchema"],
-                ),
-                Tool(
-                    name=UPDATE_JOB_TOOL_DEFINITION["name"],
-                    description=UPDATE_JOB_TOOL_DEFINITION["description"],
-                    inputSchema=UPDATE_JOB_TOOL_DEFINITION["inputSchema"],
-                ),
-                Tool(
-                    name=DELETE_JOB_TOOL_DEFINITION["name"],
-                    description=DELETE_JOB_TOOL_DEFINITION["description"],
-                    inputSchema=DELETE_JOB_TOOL_DEFINITION["inputSchema"],
-                ),
-                # Job control tools
-                Tool(
-                    name=PAUSE_JOB_TOOL_DEFINITION["name"],
-                    description=PAUSE_JOB_TOOL_DEFINITION["description"],
-                    inputSchema=PAUSE_JOB_TOOL_DEFINITION["inputSchema"],
-                ),
-                Tool(
-                    name=RESUME_JOB_TOOL_DEFINITION["name"],
-                    description=RESUME_JOB_TOOL_DEFINITION["description"],
-                    inputSchema=RESUME_JOB_TOOL_DEFINITION["inputSchema"],
-                ),
-                Tool(
-                    name=GET_JOB_LOGS_TOOL_DEFINITION["name"],
-                    description=GET_JOB_LOGS_TOOL_DEFINITION["description"],
-                    inputSchema=GET_JOB_LOGS_TOOL_DEFINITION["inputSchema"],
-                ),
-            ]
+            try:
+                tools = [
+                    # Health check tool
+                    Tool(
+                        name=HEALTH_CHECK_TOOL_DEFINITION["name"],
+                        description=HEALTH_CHECK_TOOL_DEFINITION["description"],
+                        inputSchema=HEALTH_CHECK_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    # Job management CRUD tools
+                    Tool(
+                        name=CREATE_JOB_TOOL_DEFINITION["name"],
+                        description=CREATE_JOB_TOOL_DEFINITION["description"],
+                        inputSchema=CREATE_JOB_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    Tool(
+                        name=LIST_JOBS_TOOL_DEFINITION["name"],
+                        description=LIST_JOBS_TOOL_DEFINITION["description"],
+                        inputSchema=LIST_JOBS_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    Tool(
+                        name=GET_JOB_TOOL_DEFINITION["name"],
+                        description=GET_JOB_TOOL_DEFINITION["description"],
+                        inputSchema=GET_JOB_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    Tool(
+                        name=UPDATE_JOB_TOOL_DEFINITION["name"],
+                        description=UPDATE_JOB_TOOL_DEFINITION["description"],
+                        inputSchema=UPDATE_JOB_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    Tool(
+                        name=DELETE_JOB_TOOL_DEFINITION["name"],
+                        description=DELETE_JOB_TOOL_DEFINITION["description"],
+                        inputSchema=DELETE_JOB_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    # Job control tools
+                    Tool(
+                        name=PAUSE_JOB_TOOL_DEFINITION["name"],
+                        description=PAUSE_JOB_TOOL_DEFINITION["description"],
+                        inputSchema=PAUSE_JOB_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    Tool(
+                        name=RESUME_JOB_TOOL_DEFINITION["name"],
+                        description=RESUME_JOB_TOOL_DEFINITION["description"],
+                        inputSchema=RESUME_JOB_TOOL_DEFINITION["inputSchema"],
+                    ),
+                    Tool(
+                        name=GET_JOB_LOGS_TOOL_DEFINITION["name"],
+                        description=GET_JOB_LOGS_TOOL_DEFINITION["description"],
+                        inputSchema=GET_JOB_LOGS_TOOL_DEFINITION["inputSchema"],
+                    ),
+                ]
 
-            logger.debug(f"Returning {len(tools)} tools")
-            return tools
+                logger.info(f"✅ Returning {len(tools)} tools")
+                return tools
+
+            except Exception as e:
+                logger.error(f"❌ Error in list_tools handler: {e}", exc_info=True)
+                # Return empty list to prevent handler from crashing
+                return []
 
         @self.server.call_tool()
         @performance_tracked("tool_call")
@@ -494,7 +500,7 @@ class CronlyticMCPServer:
             if job:
                 lines.extend([
                     "## Job Details",
-                    f"- **ID:** {job.get('id', 'N/A')}",
+                    f"- **ID:** {job.get('job_id', 'N/A')}",
                     f"- **Name:** {job.get('name', 'N/A')}",
                     f"- **URL:** {job.get('url', 'N/A')}",
                     f"- **Method:** {job.get('method', 'N/A')}",
@@ -605,7 +611,7 @@ class CronlyticMCPServer:
 
                     lines.extend([
                         f"### {i+1}. {job.get('name', 'Unnamed Job')} {emoji}",
-                        f"- **ID:** {job.get('id', 'N/A')}",
+                        f"- **ID:** {job.get('job_id', 'N/A')}",
                         f"- **URL:** {job.get('url', 'N/A')}",
                         f"- **Method:** {job.get('method', 'N/A')}",
                         f"- **Cron:** `{job.get('cron_expression', 'N/A')}`",
@@ -747,7 +753,7 @@ class CronlyticMCPServer:
                 lines.extend([
                     "## Job Information",
                     f"- **Name:** {job_info.get('name', 'N/A')}",
-                    f"- **ID:** {job_info.get('id', 'N/A')}",
+                    f"- **ID:** {job_info.get('job_id', 'N/A')}",
                     f"- **Status:** {job_info.get('status', 'N/A')}",
                     "",
                 ])
@@ -876,15 +882,35 @@ class CronlyticMCPServer:
             if transport_options is None:
                 transport_options = {"type": "stdio"}
 
-            # Run the server
-            async with self.server.run_stdio():
-                logger.info("Cronlytic MCP Server is running")
-                # Keep the server running
+                                                # Run the server using stdio transport
+            logger.info("Cronlytic MCP Server is running")
+
+            # Use the simple approach to run stdio server
+            async def run_forever():
                 try:
-                    while True:
-                        await asyncio.sleep(1)
-                except KeyboardInterrupt:
-                    logger.info("Received shutdown signal")
+                    import sys
+                    from mcp.server.stdio import stdio_server
+
+                    # Create the stdio server context
+                    async with stdio_server() as (read_stream, write_stream):
+                        await self.server.run(
+                            read_stream,
+                            write_stream,
+                            InitializationOptions(
+                                server_name="cronlytic-mcp-server",
+                                server_version="0.1.0",
+                                capabilities={
+                                    "tools": {},
+                                    "resources": {},
+                                    "prompts": {}
+                                }
+                            )
+                        )
+                except Exception as e:
+                    logger.error(f"Error in stdio server: {e}")
+                    raise
+
+            await run_forever()
 
         except Exception as e:
             logger.error(f"Failed to start server: {e}", exc_info=True)
