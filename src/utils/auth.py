@@ -5,10 +5,9 @@ import logging
 import os
 from pathlib import Path
 from typing import Dict, Optional
-
 from pydantic import BaseModel, Field, validator
-
 from .errors import AuthenticationError
+
 
 logger = logging.getLogger(__name__)
 

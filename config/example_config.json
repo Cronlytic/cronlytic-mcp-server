@@ -1,6 +1,6 @@
 {
-  "api_key": "your_cronlytic_api_key_here",
-  "user_id": "your_cronlytic_user_id_here",
+  "api_key": "cron_sk_438832455fa7d6194f0cea2ccd58ef6d",
+  "user_id": "6334b8b2-f011-70d8-dc88-d035b9a61469",
   "base_url": "https://api.cronlytic.com/prog",
   "timeout": 30,
   "max_retries": 3,

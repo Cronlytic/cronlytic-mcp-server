@@ -2,10 +2,9 @@
 
 import logging
 from typing import Any, Dict
-
-from ..cronlytic_client import CronlyticAPIClient
-from ..utils.auth import AuthConfig
-from ..utils.errors import CronlyticError
+from cronlytic_client import CronlyticAPIClient
+from utils.auth import AuthConfig
+from utils.errors import CronlyticError
 
 logger = logging.getLogger(__name__)
 

@@ -18,11 +18,11 @@ from mcp.types import (
     Tool,
     TextContent,
 )
+from cronlytic_client import CronlyticAPIClient
+from tools.health_check import health_check_tool, HEALTH_CHECK_TOOL_DEFINITION
+from utils.auth import AuthConfig, get_auth_config
+from utils.errors import CronlyticError
 
-from .cronlytic_client import CronlyticAPIClient
-from .tools.health_check import health_check_tool, HEALTH_CHECK_TOOL_DEFINITION
-from .utils.auth import AuthConfig, get_auth_config
-from .utils.errors import CronlyticError
 
 # Configure logging
 logging.basicConfig(

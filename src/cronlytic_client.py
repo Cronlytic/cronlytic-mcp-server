@@ -6,9 +6,8 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 from aiohttp import ClientTimeout, ClientConnectorError, ClientResponseError
-
-from .utils.auth import AuthConfig
-from .utils.errors import (
+from utils.auth import AuthConfig
+from utils.errors import (
     APIError,
     AuthenticationError,
     AuthorizationError,
@@ -17,6 +16,7 @@ from .utils.errors import (
     RateLimitError,
     TimeoutError,
 )
+
 
 logger = logging.getLogger(__name__)
 
